@@ -1,4 +1,8 @@
-import connectResizer from '@iframe-resizer/core'
+import connectResizer, {
+  IFrameComponent,
+  ResizerEvents,
+  ResizerOptions,
+} from '@iframe-resizer/core'
 import acg from 'auto-console-group'
 import React, { useEffect, useImperativeHandle, useRef } from 'react'
 
@@ -8,12 +12,24 @@ import { esModuleInterop } from '../common/utils'
 // Deal with UMD not converting default exports to named exports
 const createAutoConsoleGroup = esModuleInterop(acg)
 
+type IframeProps = React.DetailedHTMLProps<
+  React.IframeHTMLAttributes<HTMLIFrameElement>,
+  HTMLIFrameElement
+>
+
+type IframeResizerProps = Omit<IframeProps, 'scrolling'> &
+  ResizerOptions &
+  ResizerEvents & {
+    forwardRef?: any
+    id?: string
+  }
+
 // TODO: Add support for React.forwardRef() in next major version (Breaking change)
-function IframeResizer(props) {
+function IframeResizer(props: IframeResizerProps) {
   // eslint-disable-next-line react/prop-types
   const { forwardRef, ...rest } = props
   const filteredProps = filterIframeAttribs(rest)
-  const iframeRef = useRef(null)
+  const iframeRef = useRef<IFrameComponent>(null)
   const consoleGroup = createAutoConsoleGroup()
 
   const onBeforeClose = () => {
@@ -29,6 +45,9 @@ function IframeResizer(props) {
   // deal with changes to the element and does not need recalling
   useEffect(() => {
     const iframe = iframeRef.current
+
+    if (!iframe) return
+
     const resizerOptions = { ...rest, onBeforeClose }
 
     consoleGroup.label(`react(${iframe.id})`)
@@ -48,11 +67,11 @@ function IframeResizer(props) {
   useImperativeHandle(forwardRef, () => ({
     getRef: () => iframeRef,
     getElement: () => iframeRef.current,
-    resize: () => iframeRef.current.iframeResizer.resize(),
-    moveToAnchor: (anchor) =>
-      iframeRef.current.iframeResizer.moveToAnchor(anchor),
-    sendMessage: (message, targetOrigin) => {
-      iframeRef.current.iframeResizer.sendMessage(message, targetOrigin)
+    resize: () => iframeRef.current?.iFrameResizer.resize(),
+    moveToAnchor: (anchor: string) =>
+      iframeRef.current?.iFrameResizer.moveToAnchor(anchor),
+    sendMessage: (message: any, targetOrigin?: string) => {
+      iframeRef.current?.iFrameResizer.sendMessage(message, targetOrigin)
     },
   }))
 

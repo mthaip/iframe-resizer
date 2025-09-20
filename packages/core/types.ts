@@ -27,6 +27,7 @@ export type ResizerOptions = {
   tolerance?: number
   waitForLoad?: boolean
   warningTimeout?: number
+  logExpand?: boolean
 }
 
 // Resizer Events

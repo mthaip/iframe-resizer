@@ -20,6 +20,7 @@ import dts from 'rollup-plugin-dts'
 import { registerTS } from '@vue/compiler-sfc'
 import ts from 'typescript'
 import { execSync } from 'child_process'
+import typescript from '@rollup/plugin-typescript';
 
 // Ensure vue compiler can read the types
 registerTS(() => ts)
@@ -31,14 +32,16 @@ const betaMode = BETA || false
 const sourcemap = debugMode || betaMode || false
 const logging = debugMode || betaMode || TEST
 
-const outputPlugins = debugMode ? () => { } : (file, format) => ({
-  plugins: terser({
-    output: {
-      comments: false,
-      preamble: createBanner(file, format),
-    },
-  }),
-})
+const outputPlugins = debugMode
+  ? () => {}
+  : (file, format) => ({
+      plugins: terser({
+        output: {
+          comments: false,
+          preamble: createBanner(file, format),
+        },
+      }),
+    })
 
 const filterDeps = (contents) => {
   const pkg = JSON.parse(contents)
@@ -162,10 +165,7 @@ const npm = [
     input: 'packages/child/index.js',
     output: [output('child')('esm'), output('child')('cjs')],
     external: ['auto-console-group'],
-    plugins: [
-      filesize(),
-      pluginsProd('child'),
-    ],
+    plugins: [filesize(), pluginsProd('child')],
     watch: false,
   },
 
@@ -253,24 +253,17 @@ const npm = [
 
   // React
   {
-    input: 'packages/react/index.jsx',
+    input: 'packages/react/index.tsx',
     output: [output('react')('esm'), output('react')('cjs')],
-    external: [
-      '@iframe-resizer/core',
-      'auto-console-group',
-      'react',
-      /@babel\/runtime/,
-    ],
+    external: ['@iframe-resizer/core', 'auto-console-group', 'react'],
     plugins: [
+      typescript({
+        tsconfig: './packages/react/tsconfig.json',
+      }),
       ...pluginsProd('react'),
       copy({
         hook: 'closeBundle',
         targets: [
-          {
-            src: 'packages/react/index.d.ts',
-            dest: 'dist/react/',
-            rename: 'iframe-resizer.react.d.ts',
-          },
           {
             src: 'dist/react/package.json',
             dest: 'dist/react/',
@@ -278,10 +271,6 @@ const npm = [
           },
         ],
         verbose: true,
-      }),
-      babel({
-        babelHelpers: 'runtime',
-        exclude: 'node_modules/**',
       }),
       filesize(),
     ],
@@ -350,7 +339,6 @@ const npm = [
     watch: false,
   },
 ]
-
 
 // JS folder (iife)
 const js = [
